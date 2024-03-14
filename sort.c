@@ -5,7 +5,7 @@
 
 int extraMemoryAllocated;
 
-void *Alloc(size_t sz)
+void* Alloc(size_t sz)
 {
 	extraMemoryAllocated += sz;
 	size_t* ret = malloc(sizeof(size_t) + sz);
@@ -31,53 +31,112 @@ size_t Size(void* ptr)
 // extraMemoryAllocated counts bytes of extra memory allocated
 void mergeSort(int pData[], int l, int r)
 {
+	if (!(l < r)) return;
+	int i = 0;
+	int j = 0;
+	int k = 0;
+
+	int mid = (l + r) / 2;
+
+	mergeSort(pData, l, mid);
+	mergeSort(pData, mid + 1, r);
+
+	int lSize = mid - l + 1; // left half
+	int rSize = r - mid;     // right half
+	// create a left array and a right array, each size appx. half
+	int* leftArr = (int*)Alloc(lSize*sizeof(int));
+	int* rightArr = (int*)Alloc(rSize*sizeof(int));
+
+	// fill in left and right arr with respective data
+	for (i = 0; i < lSize; i++)
+		leftArr[i] = pData[l + i];
+	for (j = 0; j < rSize; j++)
+		rightArr[j] = pData[mid + 1 + j];
+
+
+	// Once arrays are split, merge them together but sorting at the same time.
+	i = 0; // Initial index of first subarray
+	j = 0; // Initial index of second subarray
+	k = l; // Initial index of merged subarray
+	while (i < lSize && j < rSize)
+	{
+		if (leftArr[i] <= rightArr[j])
+		{
+			pData[k] = leftArr[i];
+			i++;
+		}
+		else
+		{
+			pData[k] = rightArr[j];
+			j++;
+		}
+		k++;
+	}
+	
+	// if arrs are unequal, finish copying over remaining left or right data
+	while (i < lSize)
+	{
+		pData[k] = leftArr[i];
+		i++;
+		k++;
+	}
+	while (j < rSize)
+	{
+		pData[k] = rightArr[j];
+		j++;
+		k++;
+	}
+	// cleanup
+	DeAlloc(leftArr);
+	DeAlloc(rightArr);
 }
 
 // parses input file to an integer array
-int parseData(char *inputFileName, int **ppData)
+int parseData(char* inputFileName, int** ppData)
 {
-	FILE* inFile = fopen(inputFileName,"r");
+	FILE* inFile = fopen(inputFileName, "r");
 	int dataSz = 0;
-	int i, n, *data;
+	int i, n, * data;
 	*ppData = NULL;
-	
+
 	if (inFile)
 	{
-		fscanf(inFile,"%d\n",&dataSz);
-		*ppData = (int *)malloc(sizeof(int) * dataSz);
+		fscanf(inFile, "%d\n", &dataSz);
+		*ppData = (int*)malloc(sizeof(int) * dataSz);
 		// Implement parse data block
 		if (*ppData == NULL)
 		{
 			printf("Cannot allocate memory\n");
 			exit(-1);
 		}
-		for (i=0;i<dataSz;++i)
+		for (i = 0; i < dataSz; ++i)
 		{
-			fscanf(inFile, "%d ",&n);
+			fscanf(inFile, "%d ", &n);
 			data = *ppData + i;
 			*data = n;
 		}
 
 		fclose(inFile);
 	}
-	
+
 	return dataSz;
 }
 
 // prints first and last 100 items in the data array
 void printArray(int pData[], int dataSz)
 {
-	int i, sz = dataSz - 100;
+	int i, sz = (dataSz > 100 ? dataSz - 100 : 0);
+	int firstHundred = (dataSz < 100 ? dataSz : 100);
 	printf("\tData:\n\t");
-	for (i=0;i<100;++i)
+	for (i = 0; i < firstHundred; ++i)
 	{
-		printf("%d ",pData[i]);
+		printf("%d ", pData[i]);
 	}
 	printf("\n\t");
-	
-	for (i=sz;i<dataSz;++i)
+
+	for (i = sz; i < dataSz; ++i)
 	{
-		printf("%d ",pData[i]);
+		printf("%d ", pData[i]);
 	}
 	printf("\n\n");
 }
@@ -86,36 +145,36 @@ int main(void)
 {
 	clock_t start, end;
 	int i;
-    double cpu_time_used;
+	double cpu_time_used;
 	char* fileNames[] = { "input1.txt", "input2.txt", "input3.txt", "input4.txt" };
-	
-	for (i=0;i<4;++i)
+
+	for (i = 0; i < 4; ++i)
 	{
-		int *pDataSrc, *pDataCopy;
+		int* pDataSrc, * pDataCopy;
 		int dataSz = parseData(fileNames[i], &pDataSrc);
-		
+
 		if (dataSz <= 0)
 			continue;
-		
-		pDataCopy = (int *)malloc(sizeof(int)*dataSz);
-	
+
+		pDataCopy = (int*)malloc(sizeof(int) * dataSz);
+
 		printf("---------------------------\n");
-		printf("Dataset Size : %d\n",dataSz);
+		printf("Dataset Size : %d\n", dataSz);
 		printf("---------------------------\n");
-		
+
 		printf("Merge Sort:\n");
-		memcpy(pDataCopy, pDataSrc, dataSz*sizeof(int));
+		memcpy(pDataCopy, pDataSrc, dataSz * sizeof(int));
 		extraMemoryAllocated = 0;
 		start = clock();
 		mergeSort(pDataCopy, 0, dataSz - 1);
 		end = clock();
-		cpu_time_used = ((double) (end - start)) / CLOCKS_PER_SEC;
-		printf("\truntime\t\t\t: %.1lf\n",cpu_time_used);
-		printf("\textra memory allocated\t: %d\n",extraMemoryAllocated);
+		cpu_time_used = ((double)(end - start)) / CLOCKS_PER_SEC;
+		printf("\truntime\t\t\t: %.1lf\n", cpu_time_used);
+		printf("\textra memory allocated\t: %d\n", extraMemoryAllocated);
 		printArray(pDataCopy, dataSz);
-		
+
 		free(pDataCopy);
 		free(pDataSrc);
 	}
-	
+
 }
